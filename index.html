@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wine Bottle Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Wine Bottle Tracker</h1>
+
+    <div class="form-group">
+        <label for="wineName">Wine Name:</label>
+        <input type="text" id="wineName" placeholder="Enter wine name">
+    </div>
+    <div class="form-group">
+        <label for="wineQuantity">Quantity Purchased:</label>
+        <input type="number" id="wineQuantity" placeholder="Enter quantity purchased" min="0">
+    </div>
+    <div class="form-group">
+        <label for="winePrice">Price per Bottle:</label>
+        <input type="number" id="winePrice" placeholder="Enter price per bottle" min="0" step="0.01">
+    </div>
+    <button onclick="addWine()">Add Wine</button>
+
+    <h2>Track Daily Sales</h2>
+    <div id="salesContainer">
+        <div class="form-group">
+            <label for="salesWineName">Wine Name:</label>
+            <input type="text" class="salesWineName" placeholder="Enter wine name">
+        </div>
+        <div class="form-group">
+            <label for="salesQuantity">Quantity Sold:</label>
+            <input type="number" class="salesQuantity" placeholder="Enter quantity sold" min="0">
+        </div>
+    </div>
+    <button onclick="addSalesField()">Add More Sales</button>
+    <button onclick="trackSales()">Track All Sales</button>
+
+    <h2>Wine Inventory</h2>
+    <table id="wineTable">
+        <thead>
+            <tr>
+                <th>Wine Name</th>
+                <th>Quantity Left</th>
+                <th>Price per Bottle</th>
+                <th>Total Sales</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <div class="total-sales">
+        <p>Total Sales Today: $<span id="totalSales">0.00</span></p>
+    </div>
+
+    <div class="page-link">
+        <button onclick="window.location.href='traders.html'">Go to Traders Page</button>
+    </div>
+
+    <script>
+        function addWine() {
+            const wineName = document.getElementById('wineName').value;
+            const wineQuantity = parseInt(document.getElementById('wineQuantity').value, 10);
+            const winePrice = parseFloat(document.getElementById('winePrice').value);
+
+            if (!wineName || isNaN(wineQuantity) || isNaN(winePrice)) {
+                alert('Please fill in all fields correctly.');
+                return;
+            }
+
+            const wineTable = document.getElementById('wineTable').getElementsByTagName('tbody')[0];
+
+            let existingRow = null;
+            for (let row of wineTable.rows) {
+                if (row.cells[0].textContent === wineName) {
+                    existingRow = row;
+                    break;
+                }
+            }
+
+            if (existingRow) {
+                const currentQuantity = parseInt(existingRow.cells[1].textContent, 10);
+                const newQuantity = currentQuantity + wineQuantity;
+                existingRow.cells[1].textContent = newQuantity;
+            } else {
+                const newRow = wineTable.insertRow();
+                newRow.insertCell(0).textContent = wineName;
+                newRow.insertCell(1).textContent = wineQuantity;
+                newRow.insertCell(2).textContent = winePrice.toFixed(2);
+                newRow.insertCell(3).textContent = '0.00'; 
+
+                const deleteCell = newRow.insertCell(4);
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = function () {
+                    const salesAmount = parseFloat(newRow.cells[3].textContent);
+                    updateTotalSales();
+                    wineTable.deleteRow(newRow.rowIndex - 1);
+                };
+                deleteCell.appendChild(deleteButton);
+            }
+
+            document.getElementById('wineName').value = '';
+            document.getElementById('wineQuantity').value = '';
+            document.getElementById('winePrice').value = '';
+        }
+
+        function addSalesField() {
+            const container = document.getElementById('salesContainer');
+
+            const newSalesField = document.createElement('div');
+            newSalesField.className = 'sales-field';
+            newSalesField.innerHTML = `
+                <div class="form-group">
+                    <label for="salesWineName">Wine Name:</label>
+                    <input type="text" class="salesWineName" placeholder="Enter wine name">
+                </div>
+                <div class="form-group">
+                    <label for="salesQuantity">Quantity Sold:</label>
+                    <input type="number" class="salesQuantity" placeholder="Enter quantity sold" min="0">
+                </div>
+            `;
+
+            container.appendChild(newSalesField);
+        }
+
+        function trackSales() {
+            const salesWineNames = document.querySelectorAll('.salesWineName');
+            const salesQuantities = document.querySelectorAll('.salesQuantity');
+
+            for (let i = 0; i < salesWineNames.length; i++) {
+                const salesWineName = salesWineNames[i].value;
+                const salesQuantity = parseInt(salesQuantities[i].value, 10);
+
+                if (!salesWineName || isNaN(salesQuantity)) {
+                    alert('Please fill in all fields correctly.');
+                    return;
+                }
+
+                const wineTable = document.getElementById('wineTable').getElementsByTagName('tbody')[0];
+
+                let existingRow = null;
+                for (let row of wineTable.rows) {
+                    if (row.cells[0].textContent === salesWineName) {
+                        existingRow = row;
+                        break;
+                    }
+                }
+
+                if (existingRow) {
+                    const currentQuantity = parseInt(existingRow.cells[1].textContent, 10);
+                    const newQuantity = currentQuantity - salesQuantity;
+
+                    if (newQuantity < 0) {
+                        alert('Not enough stock available for ' + salesWineName + '.');
+                        return;
+                    }
+
+                    existingRow.cells[1].textContent = newQuantity;
+                    const winePrice = parseFloat(existingRow.cells[2].textContent);
+                    const newSalesAmount = salesQuantity * winePrice;
+
+                    const previousSales = parseFloat(existingRow.cells[3].textContent);
+                    const newTotalSales = previousSales + newSalesAmount;
+                    existingRow.cells[3].textContent = newTotalSales.toFixed(2);
+
+                    updateTotalSales();
+                } else {
+                    alert('Wine not found in inventory: ' + salesWineName);
+                }
+            }
+
+            // Clear input fields after processing
+            document.querySelectorAll('.salesWineName').forEach(input => input.value = '');
+            document.querySelectorAll('.salesQuantity').forEach(input => input.value = '');
+        }
+
+        function updateTotalSales() {
+            const wineTable = document.getElementById('wineTable').getElementsByTagName('tbody')[0];
+            let totalSalesToday = 0;
+
+            for (let row of wineTable.rows) {
+                totalSalesToday += parseFloat(row.cells[3].textContent);
+            }
+
+            document.getElementById('totalSales').textContent = totalSalesToday.toFixed(2);
+        }
+    </script>
+</body>
+</html>

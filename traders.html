@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traders Page</title>
+    <link rel="stylesheet" href="style2.css">
+</head>
+<body>
+    <h1>Traders Contact Information</h1>
+
+    <div class="form-group">
+        <label for="traderName">Trader Name:</label>
+        <input type="text" id="traderName" placeholder="Enter trader name">
+    </div>
+    <div class="form-group">
+        <label for="traderContact">Contact Number:</label>
+        <input type="text" id="traderContact" placeholder="Enter contact number">
+    </div>
+    <div class="form-group">
+        <label for="wineName">Wine Purchased:</label>
+        <input type="text" id="wineName" placeholder="Enter wine name">
+    </div>
+    <div class="form-group">
+        <label for="traderQuantity">Quantity Purchased:</label>
+        <input type="number" id="traderQuantity" placeholder="Enter quantity purchased" min="0">
+    </div>
+    <div class="form-group">
+        <label for="winePrice">Price per Bottle:</label>
+        <input type="number" id="winePrice" placeholder="Enter price per bottle" min="0" step="0.01">
+    </div>
+    <div class="form-group">
+        <label for="dueDate">Payment Due Date:</label>
+        <input type="date" id="dueDate">
+    </div>
+    <button onclick="addTrader()">Add Trader</button>
+
+    <h2>Traders List</h2>
+    <table id="tradersTable">
+        <thead>
+            <tr>
+                <th>Trader Name</th>
+                <th>Contact Number</th>
+                <th>Wine Purchased</th>
+                <th>Quantity Purchased</th>
+                <th>Price per Bottle</th>
+                <th>Total Purchase Price</th>
+                <th>Payment Due Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Existing rows will be dynamically added here -->
+        </tbody>
+    </table>
+
+    <div class="page-link">
+        <button onclick="window.location.href='index.html'">Back to Wine Tracker</button>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        function addTrader() {
+            const traderName = document.getElementById('traderName').value;
+            const traderContact = document.getElementById('traderContact').value;
+            const wineName = document.getElementById('wineName').value;
+            const traderQuantity = parseInt(document.getElementById('traderQuantity').value, 10);
+            const winePrice = parseFloat(document.getElementById('winePrice').value);
+            const dueDate = document.getElementById('dueDate').value;
+
+            if (!traderName || !traderContact || !wineName || isNaN(traderQuantity) || isNaN(winePrice) || !dueDate) {
+                alert('Please fill in all fields correctly.');
+                return;
+            }
+
+            const totalPurchasePrice = traderQuantity * winePrice;
+            const tradersTable = document.getElementById('tradersTable').getElementsByTagName('tbody')[0];
+
+            // Add new trader
+            const newRow = tradersTable.insertRow();
+            newRow.insertCell(0).textContent = traderName;
+            newRow.insertCell(1).textContent = traderContact;
+            newRow.insertCell(2).textContent = wineName;
+            newRow.insertCell(3).textContent = traderQuantity;
+            newRow.insertCell(4).textContent = winePrice.toFixed(2);
+            newRow.insertCell(5).textContent = totalPurchasePrice.toFixed(2);
+            newRow.insertCell(6).textContent = dueDate;
+
+            const deleteCell = newRow.insertCell(7);
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = function () {
+                tradersTable.deleteRow(newRow.rowIndex - 1);
+                checkDueDates(); // Check due dates when a row is deleted
+            };
+            deleteCell.appendChild(deleteButton);
+
+            // Clear input fields
+            document.getElementById('traderName').value = '';
+            document.getElementById('traderContact').value = '';
+            document.getElementById('wineName').value = '';
+            document.getElementById('traderQuantity').value = '';
+            document.getElementById('winePrice').value = '';
+            document.getElementById('dueDate').value = '';
+
+            // Check due dates after adding a new trader
+            checkDueDates();
+        }
+
+        function checkDueDates() {
+            const today = new Date().toISOString().split('T')[0];
+            const notification = document.getElementById('notification');
+            notification.style.display = 'none'; // Hide notification initially
+
+            const rows = document.getElementById('tradersTable').getElementsByTagName('tbody')[0].rows;
+            let notificationText = '';
+            let totalPendingAmount = 0;
+
+            for (let row of rows) {
+                const dueDate = row.cells[6].textContent;
+                if (dueDate === today) {
+                    const totalPurchasePrice = parseFloat(row.cells[5].textContent);
+                    notificationText += `Payment due today for ${row.cells[0].textContent} (${row.cells[2].textContent}): $${totalPurchasePrice.toFixed(2)}.\n`;
+                    totalPendingAmount += totalPurchasePrice;
+                }
+            }
+
+            if (notificationText) {
+                notification.textContent = `Total pending amount today: $${totalPendingAmount.toFixed(2)}\n\n` + notificationText;
+                notification.style.display = 'block'; // Show notification if there are due dates
+            }
+        }
+
+        // Check due dates when the page loads
+        window.onload = function() {
+            checkDueDates();
+        };
+    </script>
+</body>
+</html>
